@@ -30,7 +30,7 @@ jobs:
       - name: Run tests
         env:
           PYTHONPATH: .
-        run: pytest -q
+        run: pytest -q tests
 
       - name: Log in to Docker Hub
         if: github.event_name == 'push'
