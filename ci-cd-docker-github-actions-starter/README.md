@@ -6,6 +6,8 @@ This repository contains a minimal Flask web app, Dockerfile, Docker Compose fil
 2) Builds a Docker image,
 3) Pushes it to Docker Hub.
 
+echo "# Trigger workflow" >> ci-cd-docker-github-actions-starter/README.md
+
 ## Quick Start (Local)
 
 Requirements:
