@@ -44,11 +44,10 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./ci-cd-docker-github-actions-starter
+          file: ./ci-cd-docker-github-actions-starter/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:${{ startsWith(github.ref, 'refs/heads/main') && 'latest' || 'staging' }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/flask-ci-cd:${{ github.sha }},${{ secrets.DOCKER_USERNAME }}/flask-ci-cd:staging
 
       - name: Scan image with Trivy (security)
         uses: aquasecurity/trivy-action@0.24.0
