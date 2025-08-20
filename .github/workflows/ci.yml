@@ -41,8 +41,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./ci-cd-docker-github-actions-starter
+          context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:${{ startsWith(github.ref, 'refs/heads/main') && 'latest' || 'staging' }}
