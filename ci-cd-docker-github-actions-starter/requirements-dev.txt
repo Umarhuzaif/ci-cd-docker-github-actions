@@ -1,4 +1,4 @@
-# Development requirements
-pytest==8.3.2
-pytest-cov==5.0.0
-ruff==0.5.7
+-r requirements.txt
+pytest
+pytest-cov
+ruff
