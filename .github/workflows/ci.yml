@@ -47,7 +47,7 @@ jobs:
           context: ./ci-cd-docker-github-actions-starter
           file: ./ci-cd-docker-github-actions-starter/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/flask-ci-cd:${{ github.sha }},${{ secrets.DOCKER_USERNAME }}/flask-ci-cd:staging
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:${{ github.sha }},${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:staging
 
       - name: Scan image with Trivy (security)
         uses: aquasecurity/trivy-action@0.24.0
