@@ -6,6 +6,8 @@ This repository contains a minimal Flask web app, Dockerfile, Docker Compose fil
 2) Builds a Docker image,
 3) Pushes it to Docker Hub.
 
+echo "# Trigger workflow" >> ci-cd-docker-github-actions-starter/README.md
+
 ## Quick Start (Local)
 
 Requirements:
@@ -74,3 +76,4 @@ docker run -p 5000:5000 YOUR_USERNAME/flask-ci-cd:latest
 ## Notes
 - The Docker image uses **gunicorn** to serve the Flask app.
 - For learning purposes we keep things minimal; in production you'd add logging, health probes, and proper config management.
+"# Trigger workflow" 

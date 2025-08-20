@@ -1,0 +1,6 @@
+line-length = 100
+exclude = ["get-pip.py", ".venv", "__pycache__", ".pytest_cache"]
+
+[lint]
+select = ["E", "F", "I"]
+ignore = []
