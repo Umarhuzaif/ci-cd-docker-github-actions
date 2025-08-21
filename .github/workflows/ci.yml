@@ -24,7 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # (Optional) language setup + tests — adapt to your stack
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -48,7 +47,6 @@ jobs:
       - name: Set tag
         id: tag
         run: |
-          # Push "latest" on main; else use short SHA for dev/PRs
           if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
             echo "tag=latest" >> $GITHUB_OUTPUT
           else
@@ -64,13 +62,11 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
 
-
   deploy:
     name: Deploy to VM
     needs: build-test-push
-    # Target your VM's runner. If you gave it the "prod" label, use labels:
-    runs-on: [self-hosted, linux, x64, prod]
-    if: startsWith(github.ref, 'refs/heads/main')  # only deploy from main
+    runs-on: [self-hosted, linux, x64]  # match your runner labels
+    if: startsWith(github.ref, 'refs/heads/main')
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       TAG: latest
