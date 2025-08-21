@@ -56,8 +56,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./ci-cd-docker-github-actions-starter
-          file: ./ci-cd-docker-github-actions-starter/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
