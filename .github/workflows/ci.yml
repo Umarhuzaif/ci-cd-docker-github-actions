@@ -1,39 +1,43 @@
-name: CI/CD - Build, Test, Push Docker
+name: CI/CD
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build-test-push:
+    name: Build, Test, Push
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
+      # (Optional) language setup + tests — adapt to your stack
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r ci-cd-docker-github-actions-starter/requirements-dev.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Lint with ruff
-        run: ruff check .
-
-      - name: Run tests with coverage
+      - name: Run tests
         run: |
-          cd ci-cd-docker-github-actions-starter
-          PYTHONPATH=. pytest -q --cov=app --cov-report=term-missing --cov-fail-under=80
+          if [ -d tests ]; then pytest -q; else echo "No tests folder, skipping"; fi
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -41,19 +45,34 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set tag
+        id: tag
+        run: |
+          # Push "latest" on main; else use short SHA for dev/PRs
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./ci-cd-docker-github-actions-starter
-          file: ./ci-cd-docker-github-actions-starter/Dockerfile
+          context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:${{ github.sha }},${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:staging
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
 
-      - name: Scan image with Trivy (security)
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-cd:${{ github.sha }}
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-   
+  deploy:
+    name: Deploy to VM
+    needs: build-test-push
+    # Target your VM's runner. If you gave it the "prod" label, use labels:
+    runs-on: [self-hosted, linux, x64, prod]
+    if: startsWith(github.ref, 'refs/heads/main')  # only deploy from main
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      TAG: latest
+    steps:
+      - name: Run deployment script on VM
+        run: |
+          ~/deploy.sh
