@@ -1,4 +1,3 @@
-
 # syntax=docker/dockerfile:1.7
 FROM python:3.12-slim
 
@@ -11,11 +10,11 @@ WORKDIR /app
 RUN groupadd -g 10001 app && useradd -u 10001 -g app -m app
 
 # Install dependencies
-COPY requirements.txt ./
+COPY ci-cd-docker-github-actions-starter/requirements.txt ./requirements.txt
 RUN python -m pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY app ./app
+COPY ci-cd-docker-github-actions-starter/app ./app
 
 # Use non-root user
 USER app
