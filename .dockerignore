@@ -1,0 +1,15 @@
+
+.git
+.github
+tests
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+.vscode
+.idea
+Dockerfile*
+docker-compose*.yml
+README.md
