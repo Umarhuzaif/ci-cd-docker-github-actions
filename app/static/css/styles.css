@@ -1,0 +1,30 @@
+/* Background + card look */
+body {
+  background: radial-gradient(1200px 600px at 10% 10%, #0e1120, #0b0f19 60%, #0a0e18);
+}
+.card.neo {
+  background: #111827;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 12px 40px rgba(0,0,0,0.4);
+  border-radius: 18px;
+}
+
+/* Heartbeat pulse */
+.heartbeat {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(34,197,94,.7);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%   { transform: scale(1);   box-shadow: 0 0 0 0 rgba(34,197,94,.7); }
+  70%  { transform: scale(1.2); box-shadow: 0 0 0 20px rgba(34,197,94,0); }
+  100% { transform: scale(1); }
+}
+
+/* Badges for status */
+.badge-ok  { background: linear-gradient(90deg,#16a34a,#22c55e); }
+.badge-bad { background: linear-gradient(90deg,#ef4444,#f43f5e); }
+
+/* Progress bars */
+.progress { height: 10px; background:#0f172a; }
+.progress-bar { transition: width .6s ease; }
