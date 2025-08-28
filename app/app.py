@@ -3,11 +3,7 @@ import os, time, socket, platform
 from datetime import datetime
 
 # IMPORTANT: point Flask to the top-level templates/static folders
-app = Flask(
-    __name__,
-    template_folder="../templates",
-    static_folder="../static",
-)
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 REQUEST_COUNT = 0
 START_TIME = time.time()
