@@ -10,6 +10,20 @@ const state = {
   mem: [],
 };
 
+function cssVar(name){ return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+
+function applyChartTheme(){
+  if(!state.chart) return;
+  const legendColor = cssVar('--legend') || '#111827';
+  const gridColor   = cssVar('--grid')   || '#d1d5db';
+  state.chart.options.plugins.legend.labels.color = legendColor;
+  state.chart.options.scales.x.ticks.color = legendColor;
+  state.chart.options.scales.y.ticks.color = legendColor;
+  state.chart.options.scales.x.grid.color = gridColor;
+  state.chart.options.scales.y.grid.color = gridColor;
+  state.chart.update('none');
+}
+
 function fmtSecs(s) {
   if (s == null) return "–";
   const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
@@ -102,7 +116,7 @@ async function fetchLogs(){
   try{
     const r = await fetch("/api/logs");
     if(!r.ok) throw new Error();
-    const j = await r.json(); // [{ts,path,status}, ...]
+    const j = await r.json();
     $("logs").textContent = j.map(x => `${x.ts}  ${x.path}  ${x.status}`).join("\n") || "—";
   }catch{
     const card = document.getElementById("logsCard");
@@ -112,22 +126,29 @@ async function fetchLogs(){
 
 function setupChart(){
   const ctx = document.getElementById("usageChart");
+  // dataset colors follow the current CSS var --fill / --accent look
+  const cpuColor = cssVar('--fill') || '#3b82f6';
+  const memColor = '#8b5cf6'; // a second line; stays readable in both themes
   state.chart = new Chart(ctx, {
     type: "line",
     data: {
       labels: [],
       datasets: [
-        { label: "CPU", data: [], tension: .3, borderWidth: 2, pointRadius: 0 },
-        { label: "Memory", data: [], tension: .3, borderWidth: 2, pointRadius: 0 },
+        { label: "CPU", data: [], tension: .3, borderWidth: 2, pointRadius: 0, borderColor: cpuColor },
+        { label: "Memory", data: [], tension: .3, borderWidth: 2, pointRadius: 0, borderColor: memColor },
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: "top" } },
-      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } } }
+      plugins: { legend: { position: "top", labels: { color: '#111827' } } },
+      scales: {
+        x: { ticks: { color: '#111827' }, grid: { color: '#d1d5db' } },
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%", color: '#111827' }, grid: { color: '#d1d5db' } }
+      }
     }
   });
+  applyChartTheme(); // <-- apply current theme colors
 }
 
 function setIntervalButtons(){
@@ -158,8 +179,12 @@ function startPolling(){
 
 function setupDarkToggle(){
   const t = document.getElementById("darkToggle");
-  t.addEventListener("change", ()=>document.body.classList.toggle("dark", t.checked));
-  t.checked = false; // default light to match screenshot
+  // keep chips readable by not changing their classes on toggle
+  t.addEventListener("change", ()=>{
+    document.body.classList.toggle("dark", t.checked);
+    applyChartTheme(); // <-- retint chart labels/grid to the new theme
+  });
+  t.checked = false; // default light (matches your screenshot)
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{
