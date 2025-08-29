@@ -1,62 +1,160 @@
-async function fetchJSON(url) {
-  const r = await fetch(url, { cache: 'no-store' });
-  return await r.json();
+/* globals Chart */
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  timer: null,
+  intervalSec: 5,
+  chart: null,
+  labels: [],
+  cpu: [],
+  mem: [],
+};
+
+function fmtSecs(s) {
+  if (s == null) return "–";
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  if (h) return `${h}h ${m}m ${sec}s`;
+  if (m) return `${m}m ${sec}s`;
+  return `${sec}s`;
 }
-function secondsToHMS(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${h}h ${m}m ${s}s`;
+
+function setBars(cpu, mem){
+  const c = cpu ?? 0, m = mem ?? 0;
+  $("cpuBar").style.width = Math.min(c,100) + "%";
+  $("memBar").style.width = Math.min(m,100) + "%";
+  $("cpuPct").textContent = c==null ? "–" : `${c.toFixed(0)}%`;
+  $("memPct").textContent = m==null ? "–" : `${m.toFixed(0)}%`;
 }
-async function refresh() {
-  try {
-    const health = await fetchJSON('/api/health');
-    const stats  = await fetchJSON('/api/stats');
 
-    const badge = document.getElementById('statusBadge');
-    if (health.status === 'ok') {
-      badge.textContent = 'ONLINE — OK';
-      badge.className = 'badge badge-ok px-3 py-2';
-    } else {
-      badge.textContent = 'OFFLINE — ERROR';
-      badge.className = 'badge badge-bad px-3 py-2';
-    }
+function setServer(ok, uptime, served){
+  const badge = $("serverBadge");
+  badge.classList.toggle("ok", !!ok);
+  badge.classList.toggle("fail", !ok);
+  badge.textContent = ok ? "ONLINE" : "OFFLINE";
+  $("serverNote").textContent = ok ? "— OK" : "— Unreachable";
+  $("uptime").textContent = fmtSecs(uptime);
+  $("served").textContent = served ?? "–";
+}
 
-    document.getElementById('uptime').textContent   = secondsToHMS(stats.uptime_seconds || 0);
-    document.getElementById('requests').textContent = stats.requests ?? '--';
-    document.getElementById('commit').textContent   = stats.commit_sha || 'unknown';
-    document.getElementById('image').textContent    = stats.image_tag || 'unknown';
+function setGit(meta){
+  $("gitBranch").textContent = meta.git.branch;
+  $("gitCommit").textContent = meta.git.commit.slice(0,7);
+  $("gitAuthor").textContent = meta.git.author;
+  $("gitDate").textContent = meta.git.date || "—";
+  $("cid").textContent = meta.container.id;
+  $("cuptime").textContent = fmtSecs(meta.container.uptime_s);
+  $("ports").textContent = meta.container.port_mappings;
+  $("sysHost").textContent = meta.system.host;
+  $("sysPy").textContent = meta.system.python;
+  $("sysUtc").textContent = meta.system.utc_time;
+  $("stageBuild").textContent = meta.stages.build;
+  $("stageTest").textContent  = meta.stages.test;
+  $("stageDeploy").textContent= meta.stages.deploy;
 
-    document.getElementById('host').textContent = stats.hostname || 'unknown';
-    document.getElementById('py').textContent   = stats.python_version || 'unknown';
-    document.getElementById('ts').textContent   = stats.timestamp || '';
+  // Env badge from server if present
+  const badge = $("envBadge");
+  if (window.APP_ENV) badge.textContent = window.APP_ENV;
+}
 
-    const cpu = document.getElementById('cpu');
-    const mem = document.getElementById('mem');
-    const cpuVal = document.getElementById('cpu-val');
-    const memVal = document.getElementById('mem-val');
+async function fetchMeta(){
+  const r = await fetch("/api/meta");
+  if(!r.ok) throw new Error("meta failed");
+  const j = await r.json();
+  setGit(j);
+}
 
-    if (typeof stats.cpu === 'number') {
-      cpu.style.width = `${stats.cpu}%`;
-      cpuVal.textContent = stats.cpu.toFixed(0);
-    } else {
-      cpu.style.width = '0%';
-      cpuVal.textContent = '--';
-    }
-    if (typeof stats.memory === 'number') {
-      mem.style.width = `${stats.memory}%`;
-      memVal.textContent = stats.memory.toFixed(0);
-    } else {
-      mem.style.width = '0%';
-      memVal.textContent = '--';
-    }
-  } catch (e) {
-    const badge = document.getElementById('statusBadge');
-    badge.textContent = 'OFFLINE — ERROR';
-    badge.className = 'badge badge-bad px-3 py-2';
+async function fetchHealth(){
+  const r = await fetch("/api/health");
+  if(!r.ok) throw new Error("health failed");
+  const j = await r.json();
+  setServer(j.ok, j.uptime_s, j.requests_served);
+  setBars(j.cpu, j.memory);
+}
+
+async function fetchStats(){
+  const r = await fetch("/api/stats");
+  if(!r.ok) throw new Error("stats failed");
+  const j = await r.json();
+  const now = new Date();
+  state.labels.push(now.toLocaleTimeString([], {minute:'2-digit', second:'2-digit'}));
+  state.cpu.push(j.cpu ?? 0);
+  state.mem.push(j.memory ?? 0);
+  if(state.labels.length>60){ state.labels.shift(); state.cpu.shift(); state.mem.shift(); }
+  state.chart.data.labels = state.labels;
+  state.chart.data.datasets[0].data = state.cpu;
+  state.chart.data.datasets[1].data = state.mem;
+  state.chart.update();
+}
+
+async function fetchLogs(){
+  // Optional: requires /api/logs backend. If missing, hide the card gracefully.
+  try{
+    const r = await fetch("/api/logs");
+    if(!r.ok) throw new Error();
+    const j = await r.json(); // [{ts,path,status}, ...]
+    $("logs").textContent = j.map(x => `${x.ts}  ${x.path}  ${x.status}`).join("\n") || "—";
+  }catch(e){
+    document.getElementById("logsCard").style.display = "none";
   }
 }
-document.addEventListener('DOMContentLoaded', () => {
-  refresh();
-  setInterval(refresh, 5000);
+
+function setupChart(){
+  const ctx = document.getElementById("usageChart");
+  state.chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [
+        { label: "CPU", data: [], tension: .3, borderWidth: 2, pointRadius: 0 },
+        { label: "Memory", data: [], tension: .3, borderWidth: 2, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "top" } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } }
+      }
+    }
+  });
+}
+
+function setIntervalButtons(){
+  const chips = document.querySelectorAll(".chip");
+  chips.forEach(btn=>{
+    if(btn.dataset.interval === String(state.intervalSec)) btn.classList.add("active");
+    btn.addEventListener("click", ()=>{
+      chips.forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      state.intervalSec = parseInt(btn.dataset.interval,10);
+      startPolling();
+    });
+  });
+}
+
+function startPolling(){
+  if(state.timer) clearInterval(state.timer);
+  const tick = async ()=>{
+    try{
+      await Promise.all([fetchMeta(), fetchHealth(), fetchStats(), fetchLogs()]);
+    }catch(e){
+      setServer(false, null, null);
+    }
+  };
+  tick();
+  state.timer = setInterval(tick, state.intervalSec*1000);
+}
+
+function setupDarkToggle(){
+  const t = document.getElementById("darkToggle");
+  t.addEventListener("change", ()=>document.body.classList.toggle("light", !t.checked));
+  t.checked = true; // default dark
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  setupChart();
+  setIntervalButtons();
+  setupDarkToggle();
+  startPolling();
 });
