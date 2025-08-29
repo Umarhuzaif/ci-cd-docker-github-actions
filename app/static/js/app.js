@@ -38,22 +38,24 @@ function setServer(ok, uptime, served){
 
 function dotColor(el, status){
   el.classList.remove("green","yellow","red");
-  if (status?.toLowerCase().startsWith("succ")) el.classList.add("green");
-  else if (status?.toLowerCase().startsWith("fail")) el.classList.add("red");
+  if (!status) { el.classList.add("yellow"); return; }
+  const s = status.toLowerCase();
+  if (s.startsWith("succ")) el.classList.add("green");
+  else if (s.startsWith("fail")) el.classList.add("red");
   else el.classList.add("yellow");
 }
 
 function setMeta(meta){
-  $("gitBranch").textContent = meta.git.branch;
+  $("gitBranch").textContent = meta.git.branch || "—";
   $("gitCommit").textContent = (meta.git.commit || "—").slice(0,7);
   $("gitAuthor").textContent = meta.git.author || "—";
   $("gitDate").textContent = meta.git.date || "—";
-  $("cid").textContent = meta.container.id;
+  $("cid").textContent = meta.container.id || "—";
   $("cuptime").textContent = fmtSecs(meta.container.uptime_s);
-  $("ports").textContent = meta.container.port_mappings;
-  $("sysHost").textContent = meta.system.host;
-  $("sysPy").textContent = meta.system.python;
-  $("sysUtc").textContent = meta.system.utc_time;
+  $("ports").textContent = meta.container.port_mappings || "—";
+  $("sysHost").textContent = meta.system.host || "—";
+  $("sysPy").textContent = meta.system.python || "—";
+  $("sysUtc").textContent = meta.system.utc_time || "—";
 
   $("stageBuild").textContent  = meta.stages.build;
   $("stageTest").textContent   = meta.stages.test;
@@ -97,7 +99,6 @@ async function fetchStats(){
 }
 
 async function fetchLogs(){
-  // optional: requires /api/logs on backend
   try{
     const r = await fetch("/api/logs");
     if(!r.ok) throw new Error();
@@ -157,8 +158,8 @@ function startPolling(){
 
 function setupDarkToggle(){
   const t = document.getElementById("darkToggle");
-  t.addEventListener("change", ()=>document.body.classList.toggle("light", !t.checked));
-  t.checked = true; // default dark
+  t.addEventListener("change", ()=>document.body.classList.toggle("dark", t.checked));
+  t.checked = false; // default light to match screenshot
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{

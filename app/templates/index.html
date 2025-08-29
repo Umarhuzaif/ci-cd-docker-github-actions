@@ -1,24 +1,18 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>CI/CD Pipeline Dashboard</title>
 
-  <!-- CSS (cache-busted with python version/env vars you already pass) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ python_version }}">
 
-  <!-- Chart.js for the 5-min CPU/Mem line chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-
-  <!-- Expose a couple of server values to JS -->
   <script>
     window.APP_ENV = "{{ app_env }}";
     window.PY_VERSION = "{{ python_version }}";
     window.HOSTNAME  = "{{ host }}";
   </script>
-
-  <!-- JS (cache-busted) -->
   <script src="{{ url_for('static', filename='js/app.js') }}?v={{ python_version }}" defer></script>
 </head>
 <body>
@@ -33,6 +27,7 @@
           <button class="chip" data-interval="30">30s</button>
         </div>
         <div class="toggles">
+          <span>Dark mode</span>
           <label class="switch">
             <input id="darkToggle" type="checkbox">
             <span class="slider"></span>
@@ -47,9 +42,9 @@
       <div class="card">
         <div class="card-title">Pipeline Stages</div>
         <ul class="stages">
-          <li><span class="dot" id="dotBuild"></span> Build <span id="stageBuild" class="muted">—</span></li>
-          <li><span class="dot" id="dotTest"></span> Test <span id="stageTest" class="muted">—</span></li>
-          <li><span class="dot" id="dotDeploy"></span> Deploy <span id="stageDeploy" class="muted">—</span></li>
+          <li><span class="dot" id="dotBuild"></span> <strong>Build</strong> <span id="stageBuild" class="muted">—</span></li>
+          <li><span class="dot" id="dotTest"></span> <strong>Test</strong> <span id="stageTest" class="muted">—</span></li>
+          <li><span class="dot" id="dotDeploy"></span> <strong>Deploy</strong> <span id="stageDeploy" class="muted">—</span></li>
         </ul>
       </div>
 
@@ -91,7 +86,7 @@
             <div class="bar-rail"><div id="memBar" class="bar-fill" style="width:0%"></div></div>
             <span id="memPct" class="mono">—</span>
           </div>
-          <p class="help">If CPU/Memory show “–”, host metrics aren’t available (that’s okay in some hosts).</p>
+          <p class="help">If CPU/Memory show “–”, host metrics aren't available here (that's fine).</p>
         </div>
       </div>
 
@@ -105,12 +100,10 @@
         </div>
       </div>
 
-      <!-- Resource Usage (5m chart) -->
+      <!-- Resource Usage (5m) -->
       <div class="card">
         <div class="card-title">Resource Usage (5m)</div>
-        <div style="height:160px">
-          <canvas id="usageChart"></canvas>
-        </div>
+        <div style="height:160px"><canvas id="usageChart"></canvas></div>
       </div>
 
       <!-- System Info -->
@@ -121,10 +114,10 @@
           <div><span>Python</span><strong id="sysPy">—</strong></div>
           <div><span>UTC Time</span><strong id="sysUtc">—</strong></div>
         </div>
-        <p class="muted small">This page calls <code>/api/health</code> every 5s.</p>
+        <p class="muted small">This page calls <code>/api/health</code> every 5s</p>
       </div>
 
-      <!-- Recent Logs (optional) -->
+      <!-- Logs -->
       <div class="card" id="logsCard">
         <div class="card-title">Logs</div>
         <pre id="logs" class="logs">—</pre>
