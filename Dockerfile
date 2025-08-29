@@ -23,4 +23,5 @@ USER app
 EXPOSE 5000
 
 # Use gunicorn for production-grade HTTP serving
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "app.app:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "app.app:app", "--workers=2", "--threads=4", "--timeout=30"]
+

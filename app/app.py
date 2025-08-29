@@ -1,12 +1,21 @@
 from flask import Flask, jsonify, render_template, request
 import os, time, socket, platform
 from datetime import datetime
+from collections import deque
 
-# IMPORTANT: point Flask to the top-level templates/static folders
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+# Point Flask to top-level template/static folders
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-REQUEST_COUNT = 0
+# Globals
 START_TIME = time.time()
+REQUEST_COUNT = 0
+LOGS = deque(maxlen=100)   # keep last 100 requests
+
 
 def get_basic_stats():
     info = {
@@ -16,15 +25,15 @@ def get_basic_stats():
         "commit_sha": os.environ.get("GIT_COMMIT_SHA", "unknown"),
         "uptime_seconds": int(time.time() - START_TIME),
     }
-    try:
-        import psutil
+    if psutil:
         info.update({
             "cpu": psutil.cpu_percent(interval=0.1),
             "memory": psutil.virtual_memory().percent
         })
-    except Exception:
+    else:
         info.update({"cpu": None, "memory": None})
     return info
+
 
 @app.before_request
 def count_requests():
@@ -32,16 +41,34 @@ def count_requests():
     if request.path.startswith("/static"):
         return
     REQUEST_COUNT += 1
+    LOGS.appendleft({
+        "path": request.path,
+        "method": request.method,
+        "time": datetime.utcnow().isoformat() + "Z"
+    })
 
-# DASHBOARD PAGE (HTML)
+
+# -------------------------
+# Routes
+# -------------------------
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# JSON APIs used by the dashboard
+
 @app.route("/api/health")
 def api_health():
-    return jsonify(status="ok"), 200
+    stats = get_basic_stats()
+    return jsonify({
+        "ok": True,
+        "uptime_s": stats["uptime_seconds"],
+        "requests_served": REQUEST_COUNT,
+        "cpu": stats["cpu"],
+        "memory": stats["memory"],
+        "utc_time": datetime.utcnow().isoformat() + "Z"
+    })
+
 
 @app.route("/api/stats")
 def api_stats():
@@ -51,16 +78,19 @@ def api_stats():
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "status": "ok",
     })
-    return jsonify(stats), 200
+    return jsonify(stats)
 
-@app.get("/api/logs")
-def recent_logs():
+
+@app.route("/api/logs")
+def api_logs():
     return jsonify(list(LOGS))
 
-# Back-compat for older checks
+
 @app.route("/health")
 def health():
     return jsonify(status="ok"), 200
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.getenv("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port)
