@@ -1,87 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>DevOps CI/CD Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Bootstrap for layout -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="icon" href="/static/favicon.ico">
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CI/CD Pipeline Dashboard</title>
+
+  <!-- CSS (cache-busted with python version/env vars you already pass) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ python_version }}">
+
+  <!-- Chart.js for the 5-min CPU/Mem line chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+
+  <!-- Expose a couple of server values to JS -->
+  <script>
+    window.APP_ENV = "{{ app_env }}";
+    window.PY_VERSION = "{{ python_version }}";
+    window.HOSTNAME  = "{{ host }}";
+  </script>
+
+  <!-- JS (cache-busted) -->
+  <script src="{{ url_for('static', filename='js/app.js') }}?v={{ python_version }}" defer></script>
 </head>
-<body class="bg-dark text-light">
-  <nav class="navbar navbar-dark bg-black border-bottom border-secondary">
-    <div class="container-fluid">
-      <span class="navbar-brand mb-0 h1">🚀 CI/CD Pipeline Dashboard</span>
-      <span class="small text-secondary">Auto refresh every 5s</span>
-    </div>
-  </nav>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>CI/CD Pipeline Dashboard</h1>
+      <div class="header-controls">
+        <div class="refresh">
+          <span>Auto refresh</span>
+          <button class="chip" data-interval="5">5s</button>
+          <button class="chip" data-interval="10">10s</button>
+          <button class="chip" data-interval="30">30s</button>
+        </div>
+        <div class="toggles">
+          <label class="switch">
+            <input id="darkToggle" type="checkbox">
+            <span class="slider"></span>
+          </label>
+          <span class="env-badge" id="envBadge">PROD</span>
+        </div>
+      </div>
+    </header>
 
-  <main class="container py-4">
-    <div class="row g-4">
-      <!-- STATUS CARD -->
-      <div class="col-12 col-lg-4">
-        <div class="card neo border-0 h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between">
-              <h5 class="card-title mb-0">Server Status</h5>
-              <div id="heartbeat" class="heartbeat"></div>
-            </div>
-            <div class="mt-3">
-              <span id="statusBadge" class="badge bg-secondary px-3 py-2">Loading…</span>
-            </div>
-            <ul class="list-unstyled mt-3 mb-0 small">
-              <li>Uptime: <span id="uptime">--</span></li>
-              <li>Requests served: <span id="requests">--</span></li>
-              <li>Commit: <code id="commit">--</code></li>
-              <li>Image: <code id="image">--</code></li>
-            </ul>
-          </div>
+    <section class="grid">
+      <!-- Pipeline Stages -->
+      <div class="card">
+        <div class="card-title">Pipeline Stages</div>
+        <ul class="stages">
+          <li><span class="dot" id="dotBuild"></span> Build <span id="stageBuild" class="muted">—</span></li>
+          <li><span class="dot" id="dotTest"></span> Test <span id="stageTest" class="muted">—</span></li>
+          <li><span class="dot" id="dotDeploy"></span> Deploy <span id="stageDeploy" class="muted">—</span></li>
+        </ul>
+      </div>
+
+      <!-- Server Status -->
+      <div class="card">
+        <div class="card-title">Server Status</div>
+        <div class="status-row">
+          <span id="serverBadge" class="badge">—</span>
+          <span id="serverNote" class="muted">—</span>
+        </div>
+        <div class="kv">
+          <div><span>Uptime</span><strong id="uptime">—</strong></div>
+          <div><span>Requests served</span><strong id="served">—</strong></div>
         </div>
       </div>
 
-      <!-- RESOURCE USAGE -->
-      <div class="col-12 col-lg-4">
-        <div class="card neo border-0 h-100">
-          <div class="card-body">
-            <h5 class="card-title">Resource Usage</h5>
-            <div class="mt-3">
-              <div class="mb-2">CPU: <span id="cpu-val">--</span>%</div>
-              <div class="progress mb-3">
-                <div id="cpu" class="progress-bar" role="progressbar" style="width:0%"></div>
-              </div>
-              <div class="mb-2">Memory: <span id="mem-val">--</span>%</div>
-              <div class="progress">
-                <div id="mem" class="progress-bar bg-info" role="progressbar" style="width:0%"></div>
-              </div>
-              <p class="text-secondary small mt-2 mb-0">If CPU/memory show “--”, host metrics aren’t available here (that’s fine).</p>
-            </div>
-          </div>
+      <!-- Git Info -->
+      <div class="card">
+        <div class="card-title">Git Info</div>
+        <div class="kv">
+          <div><span>Branch</span><strong id="gitBranch">—</strong></div>
+          <div><span>Commit</span><strong id="gitCommit">—</strong></div>
+          <div><span>Author</span><strong id="gitAuthor">—</strong></div>
+          <div><span>Last commit</span><strong id="gitDate">—</strong></div>
         </div>
       </div>
 
-      <!-- SYSTEM INFO -->
-      <div class="col-12 col-lg-4">
-        <div class="card neo border-0 h-100">
-          <div class="card-body">
-            <h5 class="card-title">System Info</h5>
-            <ul class="list-unstyled small mb-0">
-              <li>Host: <code id="host">--</code></li>
-              <li>Python: <code id="py">--</code></li>
-              <li>UTC Time: <code id="ts">--</code></li>
-            </ul>
-            <hr class="border-secondary">
-            <div class="small text-secondary">This page calls <code>/api/health</code> & <code>/api/stats</code> every 5s.</div>
+      <!-- Resource Usage (current) -->
+      <div class="card">
+        <div class="card-title">Resource Usage</div>
+        <div class="bars">
+          <div class="bar">
+            <span>CPU</span>
+            <div class="bar-rail"><div id="cpuBar" class="bar-fill" style="width:0%"></div></div>
+            <span id="cpuPct" class="mono">—</span>
           </div>
+          <div class="bar">
+            <span>Memory</span>
+            <div class="bar-rail"><div id="memBar" class="bar-fill" style="width:0%"></div></div>
+            <span id="memPct" class="mono">—</span>
+          </div>
+          <p class="help">If CPU/Memory show “–”, host metrics aren’t available (that’s okay in some hosts).</p>
         </div>
       </div>
-    </div>
+
+      <!-- Container Info -->
+      <div class="card">
+        <div class="card-title">Container Info</div>
+        <div class="kv">
+          <div><span>Container ID</span><strong id="cid">—</strong></div>
+          <div><span>Uptime</span><strong id="cuptime">—</strong></div>
+          <div><span>Port mappings</span><strong id="ports">—</strong></div>
+        </div>
+      </div>
+
+      <!-- Resource Usage (5m chart) -->
+      <div class="card">
+        <div class="card-title">Resource Usage (5m)</div>
+        <div style="height:160px">
+          <canvas id="usageChart"></canvas>
+        </div>
+      </div>
+
+      <!-- System Info -->
+      <div class="card">
+        <div class="card-title">System Info</div>
+        <div class="kv">
+          <div><span>Host</span><strong id="sysHost">—</strong></div>
+          <div><span>Python</span><strong id="sysPy">—</strong></div>
+          <div><span>UTC Time</span><strong id="sysUtc">—</strong></div>
+        </div>
+        <p class="muted small">This page calls <code>/api/health</code> every 5s.</p>
+      </div>
+
+      <!-- Recent Logs (optional) -->
+      <div class="card" id="logsCard">
+        <div class="card-title">Logs</div>
+        <pre id="logs" class="logs">—</pre>
+      </div>
+    </section>
   </main>
-
-  <footer class="text-center text-secondary small pb-4">
-    Built with Flask • Docker • GitHub Actions
-  </footer>
-
-  <script src="/static/js/app.js" defer></script>
 </body>
 </html>

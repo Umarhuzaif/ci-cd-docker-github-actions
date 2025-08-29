@@ -36,10 +36,17 @@ function setServer(ok, uptime, served){
   $("served").textContent = served ?? "–";
 }
 
-function setGit(meta){
+function dotColor(el, status){
+  el.classList.remove("green","yellow","red");
+  if (status?.toLowerCase().startsWith("succ")) el.classList.add("green");
+  else if (status?.toLowerCase().startsWith("fail")) el.classList.add("red");
+  else el.classList.add("yellow");
+}
+
+function setMeta(meta){
   $("gitBranch").textContent = meta.git.branch;
-  $("gitCommit").textContent = meta.git.commit.slice(0,7);
-  $("gitAuthor").textContent = meta.git.author;
+  $("gitCommit").textContent = (meta.git.commit || "—").slice(0,7);
+  $("gitAuthor").textContent = meta.git.author || "—";
   $("gitDate").textContent = meta.git.date || "—";
   $("cid").textContent = meta.container.id;
   $("cuptime").textContent = fmtSecs(meta.container.uptime_s);
@@ -47,11 +54,15 @@ function setGit(meta){
   $("sysHost").textContent = meta.system.host;
   $("sysPy").textContent = meta.system.python;
   $("sysUtc").textContent = meta.system.utc_time;
-  $("stageBuild").textContent = meta.stages.build;
-  $("stageTest").textContent  = meta.stages.test;
-  $("stageDeploy").textContent= meta.stages.deploy;
 
-  // Env badge from server if present
+  $("stageBuild").textContent  = meta.stages.build;
+  $("stageTest").textContent   = meta.stages.test;
+  $("stageDeploy").textContent = meta.stages.deploy;
+
+  dotColor($("dotBuild"),  meta.stages.build);
+  dotColor($("dotTest"),   meta.stages.test);
+  dotColor($("dotDeploy"), meta.stages.deploy);
+
   const badge = $("envBadge");
   if (window.APP_ENV) badge.textContent = window.APP_ENV;
 }
@@ -59,8 +70,7 @@ function setGit(meta){
 async function fetchMeta(){
   const r = await fetch("/api/meta");
   if(!r.ok) throw new Error("meta failed");
-  const j = await r.json();
-  setGit(j);
+  setMeta(await r.json());
 }
 
 async function fetchHealth(){
@@ -87,14 +97,15 @@ async function fetchStats(){
 }
 
 async function fetchLogs(){
-  // Optional: requires /api/logs backend. If missing, hide the card gracefully.
+  // optional: requires /api/logs on backend
   try{
     const r = await fetch("/api/logs");
     if(!r.ok) throw new Error();
     const j = await r.json(); // [{ts,path,status}, ...]
     $("logs").textContent = j.map(x => `${x.ts}  ${x.path}  ${x.status}`).join("\n") || "—";
-  }catch(e){
-    document.getElementById("logsCard").style.display = "none";
+  }catch{
+    const card = document.getElementById("logsCard");
+    if (card) card.style.display = "none";
   }
 }
 
@@ -113,9 +124,7 @@ function setupChart(){
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { position: "top" } },
-      scales: {
-        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } }
-      }
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } } }
     }
   });
 }
@@ -138,7 +147,7 @@ function startPolling(){
   const tick = async ()=>{
     try{
       await Promise.all([fetchMeta(), fetchHealth(), fetchStats(), fetchLogs()]);
-    }catch(e){
+    }catch{
       setServer(false, null, null);
     }
   };
