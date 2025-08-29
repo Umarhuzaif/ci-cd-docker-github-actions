@@ -26,7 +26,8 @@ def uptime_seconds():
 def get_cpu_mem():
     if psutil is None:
         return None, None
-    cpu = psutil.cpu_percent(interval=None)
+    # short interval gives a real sample instead of “since last call”
+    cpu = psutil.cpu_percent(interval=0.1)
     mem = psutil.virtual_memory().percent
     CPU_HISTORY.append(cpu)
     MEM_HISTORY.append(mem)
