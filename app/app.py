@@ -53,6 +53,10 @@ def api_stats():
     })
     return jsonify(stats), 200
 
+@app.get("/api/logs")
+def recent_logs():
+    return jsonify(list(LOGS))
+
 # Back-compat for older checks
 @app.route("/health")
 def health():
