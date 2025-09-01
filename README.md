@@ -1,76 +1,76 @@
+# 🚀 CI/CD Monitoring Dashboard
 
-# CI/CD Pipeline with GitHub Actions & Docker (Starter)
+A **containerized monitoring dashboard** built with **Flask, Gunicorn, and Docker**, deployed seamlessly on **Render Cloud**.  
+This project provides **real-time visibility** into your CI/CD pipeline, server health, resource usage, Git metadata, and logs — all from a clean web interface.
 
-This repository contains a minimal Flask web app, Dockerfile, Docker Compose file, unit tests, and a GitHub Actions workflow that:
-1) Runs tests,
-2) Builds a Docker image,
-3) Pushes it to Docker Hub.
+---
 
-## Quick Start (Local)
+## 📖 Overview
+The dashboard is designed to **track and visualize CI/CD pipeline activity** in real time.  
+It auto-refreshes every few seconds and exposes REST APIs to fetch live data about:
+- **Pipeline Stages (Build, Test, Deploy)**
+- **Server Uptime and Requests**
+- **System Resource Usage (CPU, Memory)**
+- **Container Info (ID, Ports, Uptime)**
+- **Git Metadata (Branch, Commit, Author, Date)**
+- **Recent Logs (latest 100+ requests)**
 
-Requirements:
-- Docker Desktop (or Docker Engine)
-- Git
-- (Optional) Python if you want to run the app without Docker
+This makes it useful for **developers, DevOps engineers, and teams** who want an easy way to monitor their deployments.
 
-### Run with Docker Compose
-```bash
-docker compose up --build -d
-# open http://localhost:5000/
-# health check:
-curl http://localhost:5000/health
-```
+---
 
-### Run without Docker (for development)
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
-python app/app.py
-```
+## ✨ Features
+- ✅ **Pipeline Status**: View Build/Test/Deploy results (via environment variables or CI updates).  
+- ✅ **Server Health Monitoring**: Live uptime, request count, and server availability check.  
+- ✅ **Resource Usage**: CPU & memory usage with short-term history charts (using `psutil`).  
+- ✅ **Git Metadata Tracking**: Branch, commit hash, author, and commit date displayed.  
+- ✅ **Container Insights**: Shows container ID, uptime, and mapped ports.  
+- ✅ **Logs Panel**: Displays recent requests with timestamps & status codes.  
+- ✅ **Dark Mode**: Toggle between light and dark UI.  
+- ✅ **Auto Refresh**: Refreshes every 5s / 10s / 30s for live updates.  
+- ✅ **REST APIs** (integrated for programmatic use).  
 
-## CI/CD via GitHub Actions
+---
 
-1. **Create a Docker Hub account** and a repository called `flask-ci-cd`.
-2. **Create a Docker Hub access token** (Account Settings > Security > New Access Token).
-3. **Create GitHub Secrets** in your repo:
-   - `DOCKERHUB_USERNAME` = your Docker Hub username
-   - `DOCKERHUB_TOKEN` = the access token you created
-4. Push to `main` branch. The workflow will:
-   - Run `pytest`
-   - Build a Docker image
-   - Push tags:
-     - `YOUR_USERNAME/flask-ci-cd:latest`
-     - `YOUR_USERNAME/flask-ci-cd:<git-sha>`
+## 🛠️ Tech Stack
+- **Backend**: Flask (Python) + Gunicorn  
+- **Frontend**: HTML, CSS, Vanilla JS  
+- **Containerization**: Docker  
+- **Deployment**: Render (Free Tier Cloud Hosting)  
+- **Monitoring**: psutil (system metrics)  
 
-## Pull & Run the Image from Docker Hub
-After a successful pipeline run:
-```bash
-docker pull YOUR_USERNAME/flask-ci-cd:latest
-docker run -p 5000:5000 YOUR_USERNAME/flask-ci-cd:latest
-```
+---
 
-## Endpoints
-- `/` returns a hello message
-- `/health` returns `{ "status": "ok" }`
+## 🏗️ Architecture
+1. **Flask App** → Serves both the dashboard UI (`index.html`) and REST APIs.  
+2. **Docker Container** → Ensures portability and consistent runtime environment.  
+3. **Gunicorn** → Production-grade WSGI server for serving Flask.  
+4. **Render Deployment** → Cloud service automatically builds & runs the container.  
+5. **Auto-refreshing UI** → JS polls APIs (`/api/health`, `/api/stats`, etc.) every few seconds to keep the dashboard live.  
 
-## Repository Structure
-```
-.
-├── .github/workflows/ci.yml
-├── .dockerignore
-├── .gitignore
-├── Dockerfile
-├── README.md
-├── app/
-│   └── app.py
-├── docker-compose.yml
-├── requirements-dev.txt
-├── requirements.txt
-└── tests/
-    └── test_app.py
-```
+---
 
-## Notes
-- The Docker image uses **gunicorn** to serve the Flask app.
-- For learning purposes we keep things minimal; in production you'd add logging, health probes, and proper config management.
+## 🔌 REST API Endpoints
+
+| Endpoint        | Description |
+|-----------------|-------------|
+| `/api/health`   | Server uptime, requests served, CPU %, memory %, UTC time |
+| `/api/stats`    | Resource usage with CPU/memory history |
+| `/api/meta`     | Git branch, commit, author, pipeline stages, container info |
+| `/api/logs`     | Recent request logs (path, status, timestamp) |
+| `/health`       | Simple health check (returns `{status: "ok"}`) |
+
+---
+
+## ⚙️ Setup & Run Locally
+
+1. **Clone the repository**
+   ```powershell
+   git clone https://github.com/Umarhuzaif/ci-cd-docker-github-actions-dashboard.git
+   cd ci-cd-docker-github-actions-dashboard
+
+
+
+
+
+#https://ci-cd-dashboard-z1wh.onrender.com/
